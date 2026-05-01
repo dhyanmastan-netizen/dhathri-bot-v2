@@ -1,14 +1,18 @@
 const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
-const qrcode = require("qrcode-terminal");
 const mongoose = require("mongoose");
 const express = require("express");
 
 const app = express();
 
-/* MongoDB */
-mongoose.connect("mongodb+srv://dhyan:dhyan123@dhathri-collections.utxz7rp.mongodb.net/shop?retryWrites=true&w=majority");
+/* 🔗 CONNECT MONGODB */
+mongoose.connect("mongodb+srv://dhyan:dhyan123@dhathri-collections.utxz7rp.mongodb.net/shop?retryWrites=true&w=majority", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("💾 MongoDB Connected"))
+.catch(err => console.log("❌ Mongo Error:", err.message));
 
-/* Model */
+/* 📦 PRODUCT MODEL */
 const Product = mongoose.model("Product", {
   caption: String,
   price: String,
@@ -16,6 +20,7 @@ const Product = mongoose.model("Product", {
   category: String
 });
 
+/* 🤖 START WHATSAPP BOT */
 async function startBot() {
 
   const { state, saveCreds } = await useMultiFileAuthState("auth");
@@ -26,17 +31,25 @@ async function startBot() {
 
   sock.ev.on("creds.update", saveCreds);
 
-  /* 🔥 THIS SHOWS QR CODE */
+  /* 🔥 CONNECTION + QR HANDLING */
   sock.ev.on("connection.update", (update) => {
-    const { qr } = update;
+    const { qr, connection } = update;
 
     if (qr) {
-      console.log("📱 Scan this QR:");
-      qrcode.generate(qr, { small: true });
+      console.log("📱 Scan QR here:");
+      console.log(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`);
+    }
+
+    if (connection === "open") {
+      console.log("✅ WhatsApp Connected!");
+    }
+
+    if (connection === "close") {
+      console.log("❌ Connection closed, retrying...");
     }
   });
 
-  /* Messages */
+  /* 📩 MESSAGE HANDLER */
   sock.ev.on("messages.upsert", async ({ messages }) => {
 
     const msg = messages[0];
@@ -46,31 +59,31 @@ async function startBot() {
       msg.message.conversation ||
       msg.message.extendedTextMessage?.text;
 
-    console.log("📩", text);
+    console.log("📩 Message:", text);
 
     if (text?.startsWith("product:")) {
 
       let [name, price] = text.replace("product:", "").split(",");
 
       await Product.create({
-        caption: name,
-        price: price,
+        caption: name || "No name",
+        price: price || "0",
         images: ["https://via.placeholder.com/300"],
         category: "auto"
       });
 
-      console.log("✅ Saved to DB");
+      console.log("✅ Product saved to DB");
     }
   });
 }
 
 startBot();
 
-/* Server */
+/* 🌐 SERVER */
 app.get("/", (req, res) => {
-  res.send("Bot Running");
+  res.send("🤖 Dhathri Bot Running");
 });
 
 app.listen(process.env.PORT || 3000, () => {
-  console.log("🚀 Bot started");
+  console.log("🚀 Server started");
 });
