@@ -1,12 +1,14 @@
 const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
+const qrcode = require("qrcode-terminal");
 const mongoose = require("mongoose");
 const express = require("express");
 
 const app = express();
 
-/* 🔗 ADD YOUR MONGODB URL HERE */
-mongoose.connect("mongodb+srv://dhyan:dhyan123@dhathri-collections.utxz7rp.mongodb.net/shop?retryWrites=true&w=majorityL");
+/* MongoDB */
+mongoose.connect("mongodb+srv://dhyan:dhyan123@dhathri-collections.utxz7rp.mongodb.net/shop?retryWrites=true&w=majority");
 
+/* Model */
 const Product = mongoose.model("Product", {
   caption: String,
   price: String,
@@ -19,12 +21,22 @@ async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState("auth");
 
   const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true
+    auth: state
   });
 
   sock.ev.on("creds.update", saveCreds);
 
+  /* 🔥 THIS SHOWS QR CODE */
+  sock.ev.on("connection.update", (update) => {
+    const { qr } = update;
+
+    if (qr) {
+      console.log("📱 Scan this QR:");
+      qrcode.generate(qr, { small: true });
+    }
+  });
+
+  /* Messages */
   sock.ev.on("messages.upsert", async ({ messages }) => {
 
     const msg = messages[0];
@@ -54,6 +66,7 @@ async function startBot() {
 
 startBot();
 
+/* Server */
 app.get("/", (req, res) => {
   res.send("Bot Running");
 });
