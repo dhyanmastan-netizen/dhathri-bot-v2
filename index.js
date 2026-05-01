@@ -5,7 +5,7 @@ const express = require("express");
 const app = express();
 
 /* 🔗 ADD YOUR MONGODB URL HERE */
-mongoose.connect("YOUR_MONGO_URL");
+mongoose.connect("mongodb+srv://dhyan:dhyan123@dhathri-collections.utxz7rp.mongodb.net/shop?retryWrites=true&w=majorityL");
 
 const Product = mongoose.model("Product", {
   caption: String,
